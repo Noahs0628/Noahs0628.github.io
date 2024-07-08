@@ -1,0 +1,35 @@
+#DO NOT RUN, MANUALLY UPDATE OPTIONS AND TABLES IF PARTS ARE ADDED/REMOVED
+# THIS CREATES BLANK TABLES FOR EVERYTHING AND WOULD BE MORE WORK 
+import os
+import csv
+import shutil
+import chardet
+directory = r"C:\Users\noahs\Documents\Spot On Lighting\App\data\options"
+new_directory=r"C:\Users\noahs\Documents\Spot On Lighting\App\data\inactives"
+from keeper import names, dropdowns, AllDDs,tracker,labels
+
+filenames = sorted(os.listdir(directory))
+
+#####for i, filename1 in enumerate(filenames):
+    if '-' in filename1 and '_' in filename1:
+        id_part1 = filename1.split('-')[0]
+        name1 = filename1.split('-')[1].split('_')[0]
+
+        # Iterate over files after the current filename1
+        for filename2 in filenames[i + 1:]:
+            if '-' in filename2 and '_' in filename2:
+                id_part2 = filename2.split('-')[0]
+                name2 = filename2.split('-')[1].split('_')[0]
+
+                csv_filename = os.path.join(new_directory, f"{name1}_{name2}.csv")
+
+                with open(csv_filename, mode='w', newline='') as csv_file:
+                    csv_writer = csv.writer(csv_file)
+                    
+                    
+                    header_row = [""] + list(tracker[name1].keys())
+                    csv_writer.writerow(header_row)
+                                            
+                    for option in list(tracker[name2].keys()):
+                            row = [option] + [1] * (len(header_row) - 1)
+                            csv_writer.writerow(row)

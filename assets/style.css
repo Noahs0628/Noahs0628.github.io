@@ -1,0 +1,131 @@
+.app-div {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    gap: 10px;
+}
+
+.grid-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+select {
+    padding: 5px;
+    font-size: 16px;
+}
+hr {
+    border-top: 2px solid gray;
+}
+
+.left-column{
+    float: left;
+    width: 10% ;
+}
+
+.right-column{
+    float: right;
+    width: 90% ;
+}
+/* input box */
+.Select-control {
+    background-color: rgb(255, 255, 255);
+    color: black;
+}
+
+
+/* changes the text color of input box */
+.Select-value-label {
+    color: rgb(0, 0, 0) !important;
+}
+
+.Select--single > .Select-control .Select-value, .Select-placeholder {
+    border: 1px solid rgb(255, 255, 255);
+    border-radius: 4px;
+}
+
+
+/* dropdown menu options */
+.VirtualizedSelectOption {
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
+ }
+
+ .VirtualizedSelectOption[data-value="-1"] {
+    background-color: grey !important;
+    color: rgb(0, 0, 0) !important;
+}
+/* dropdown menu hover effect */
+.VirtualizedSelectFocusedOption {
+    background-color: rgb(159, 179, 220);
+}
+
+
+
+.dropdown-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.dropdown-button {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.tabs-group {
+    padding-top: 20px;
+}
+
+.app-div {
+    padding: 10px;
+}
+
+.data-table-div {
+    margin: auto;
+    padding: 10px;
+}
+
+.budget-label {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.budget-text {
+    font-size: 20px;
+}
+
+.budget-text-value {
+    font-size: 20px;
+    font-style: italic;
+}
+
+.budget-progress-bar {
+    height: 20px;
+}
+
+.budget-tooltip {
+    font-size: 18px;
+}
+
+.checklist {
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 20px;
+}
+
+@media(max-width: 800px) {
+    .dropdown-container {
+        grid-template-columns: 1fr;
+    }
+}
