@@ -7,7 +7,7 @@ from DDmaker import dropdowns, tracker, names,empty_tracker
 import tempfile
 
 
-directory = r"\data"
+directory = r"data"
 #updates the values in the working compat tables when any value is changed
 def update_options(dd_ID,dd_Value, type):
     #type represents what to do, + means a value represents a deselected value requiring the addition of what was origionally removed
