@@ -3,10 +3,11 @@ import os
 import csv
 import shutil
 import dash
-from keeper import dropdowns, tracker, names
+from DDmaker import dropdowns, tracker, names,empty_tracker
 import tempfile
-directory = r"C:\Users\noahs\Documents\Spot On Lighting\App\data"
-   
+
+
+directory = r"C:\Users\noahs\Documents\Spot_On_Lighting\App\data"
 #updates the values in the working compat tables when any value is changed
 def update_options(dd_ID,dd_Value, type):
     #type represents what to do, + means a value represents a deselected value requiring the addition of what was origionally removed
@@ -47,17 +48,36 @@ def ifLeft(file_path, key, index, type):
             if row_num!=0:                
 
                 if row[index] == '0':  # Corrected: Comparison should be with string '0'
+
                     tracker[key][row[0]] += type
 
     
-def set_options(key):
-    options = [{'label': 'Select', 'value': 'Select'}]    
-    for option, value in list(tracker[key].items()): 
-            if(value==0):
-                option_={'label': option, 'value': option}
-                options.append(option_)  # Add the cell to the left to options
-            elif key in ["Size", "LED" ,"Type", "Driver"]:
-                option_={'label': f"{option} (Not Compatible With Current Selections)", 'value': option, 'disabled': True}
-                options.append(option_)  # Add the cell to the left to options
-    
-    return options
+def set_options(AllDDs):
+    all_new_options = []
+    for dd in AllDDs:
+            if dd != '':
+                option_name = dd.split('-')[0]
+                options = [{'label': 'Select', 'value': 'Select'}]    
+                for option, value in list(tracker[option_name].items()): 
+                        if(value==0):
+                            option_={'label': option, 'value': option}
+                            options.append(option_)  # Add the cell to the left to options
+                        elif option_name in ["Size", "LED" ,"Type", "Driver"]:
+                            option_={'label': f"{option} (Not Compatible With Current Selections)", 'value': option, 'disabled': True}
+                            options.append(option_)  # Add the cell to the left to options
+
+                all_new_options.append(options)
+    return all_new_options
+
+def refresh_options(AllDDs):
+    all_options = []
+    for dd in AllDDs:
+            if dd != '':
+                option_name = dd.split('-')[0]
+                options = [{'label': 'Select', 'value': 'Select'}]    
+                for option, value in list(tracker[option_name].items()):                         
+                        option_={'label': option, 'value': option}
+                        options.append(option_)  # Add the cell to the left to options
+                    
+                all_options.append(options)
+    return all_options
