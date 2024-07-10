@@ -1,7 +1,7 @@
 import os
 import csv
 import types
-directory = r"C:\Users\noahs\Documents\Spot_On_Lighting\App\data\options"
+directory = r"\data\options"
 data_names={}
 data_dict = {}
 empty={}
