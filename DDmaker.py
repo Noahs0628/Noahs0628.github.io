@@ -14,7 +14,8 @@ for key, values in names.items():
         options=values,
         value="Select",
         clearable=False,
-   
+        persistence_type='local',
+        persistence=True,
     )
 
     dropdowns.append(dropdown)
