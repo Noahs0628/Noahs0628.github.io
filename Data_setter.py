@@ -1,7 +1,7 @@
 import os
 import csv
 import types
-directory = r"data\options"
+directory = r"data/options"
 data_names={}
 data_dict = {}
 empty={}
