@@ -14,6 +14,11 @@ for key, values in names.items():
         options=values,
         value="Select",
         clearable=False,
+<<<<<<< HEAD
+=======
+        persistence_type='local',
+        persistence=True,
+>>>>>>> 573b451fd09d2964272e4e380cb858f80b320b34
     )
 
     dropdowns.append(dropdown)
