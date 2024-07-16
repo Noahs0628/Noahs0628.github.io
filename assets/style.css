@@ -1,131 +1,95 @@
-.app-div {
-    font-family: Arial, sans-serif;
-    margin: 20px;
+/* Page background color */
+body {
+    background-color: #A9A9A9; /* Medium grey */
+}
+.Incomplete {
+    background-color: #f9ba6c; /* Light red */
+    color: #ffffff; /* White text */
+    border: 1px solid #000000; /* Matching border */
 }
 
-.grid-container {
-    display: grid;
-    grid-template-columns: 1fr 3fr;
-    gap: 10px;
+.Incomplete:hover {
+    background-color: #c0603d; /* Darker green on hover */
+    border-color: #000000; /* Darker border color on hover */
+}
+/* Styling for complete buttons */
+.Complete {
+    background-color: #1d671d; /* Light green */
+    color: #ffffff; /* White text */
+    border: 1px solid #000000; /* Matching border */
 }
 
-.grid-item {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
+.Complete:hover {
+    background-color: #0f5c0f; /* Darker green on hover */
+    border-color: #000000; /* Darker border color on hover */
 }
-
-label {
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-select {
-    padding: 5px;
+/* Dropdowns and text box background color */
+.dropdown-item-container,
+.text-box input,
+.name-input {
+    background-color: #dcdcdc; /* Light grey */
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
     font-size: 16px;
 }
-hr {
-    border-top: 2px solid gray;
-}
 
-.left-column{
-    float: left;
-    width: 10% ;
-}
-
-.right-column{
-    float: right;
-    width: 90% ;
-}
-/* input box */
-.Select-control {
-    background-color: rgb(255, 255, 255);
-    color: black;
-}
-
-
-/* changes the text color of input box */
-.Select-value-label {
-    color: rgb(0, 0, 0) !important;
-}
-
-.Select--single > .Select-control .Select-value, .Select-placeholder {
-    border: 1px solid rgb(255, 255, 255);
-    border-radius: 4px;
-}
-
-
-/* dropdown menu options */
-.VirtualizedSelectOption {
-    background-color: rgb(255, 255, 255);
-    color: rgb(0, 0, 0);
- }
-
- .VirtualizedSelectOption[data-value="-1"] {
-    background-color: grey !important;
-    color: rgb(0, 0, 0) !important;
-}
-/* dropdown menu hover effect */
-.VirtualizedSelectFocusedOption {
-    background-color: rgb(159, 179, 220);
-}
-
-
-
-.dropdown-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-.dropdown-button {
+/* Buttons styling */
+button {
     width: 100%;
-    margin-top: 5px;
-}
-
-.tabs-group {
-    padding-top: 20px;
-}
-
-.app-div {
     padding: 10px;
+    font-size: 16px;
+    margin-bottom: 15px;
 }
 
-.data-table-div {
-    margin: auto;
+.clear-button {
+    background-color: lightcoral;
+    color: white; /* Text color */
+}
+.popover{
+    background-color: orange;
+    color: rgb(255, 255, 255);
+    border: 2px solid rgb(255, 255, 255);
+    border-radius: 10px; /* Adjust the border radius for curved corners */
+    padding: 5px; /* Adjust padding as needed */
+    width: 300px; /* Set width as needed */
+    margin: 5px; /* Adjust margins as needed */
+}
+.save-button {
+    background-color: #1d671d;
+    color: white; /* Text color */
+}
+
+.edit-button {
+    background-color: rgb(155, 165, 226);
+    color: white; /* Text color */
+}
+.selectedbutton{
+    background-color: rgb(81, 25, 97);
+    color: white; /* Text color */
+}
+.delete-button {
+    background-color: rgb(198, 41, 41);
+    color: white; /* Text color */
+}
+.cancel-button {
+    background-color: rgb(237, 141, 141);
+    color: white; /* Text color */
+}
+
+/* Align everything in the right column */
+.text-box,
+button {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Padding between sections */
+.text-box{
+    padding-top: 5x; /* Adds 10 pixels of padding above the content */
+}
+.dropdown-item {
     padding: 10px;
-}
 
-.budget-label {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.budget-text {
-    font-size: 20px;
-}
-
-.budget-text-value {
-    font-size: 20px;
-    font-style: italic;
-}
-
-.budget-progress-bar {
-    height: 20px;
-}
-
-.budget-tooltip {
-    font-size: 18px;
-}
-
-.checklist {
-    text-align: center;
-    padding-top: 10px;
-    padding-bottom: 20px;
-}
-
-@media(max-width: 800px) {
-    .dropdown-container {
-        grid-template-columns: 1fr;
-    }
 }

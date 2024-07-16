@@ -14,7 +14,6 @@ for key, values in names.items():
         options=values,
         value="Select",
         clearable=False,
-   
     )
 
     dropdowns.append(dropdown)

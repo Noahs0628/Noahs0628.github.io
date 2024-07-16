@@ -1,13 +1,9 @@
 import pandas as pd
 import os
 import csv
-import shutil
-import dash
-from DDmaker import dropdowns, tracker, names,empty_tracker
-import tempfile
-
-
-directory = r"C:\Users\noahs\Documents\Spot_On_Lighting\App\data"
+from DDmaker import dropdowns, tracker, names,AllDDs
+initial_load=False
+directory = r"data"
 #updates the values in the working compat tables when any value is changed
 def update_options(dd_ID,dd_Value, type):
     #type represents what to do, + means a value represents a deselected value requiring the addition of what was origionally removed
@@ -31,6 +27,7 @@ def update_options(dd_ID,dd_Value, type):
 
 #handles the case if the changed value is on the top of the compat table
 def ifTop(file_path, key, index, type):
+    global tracker
     with open(file_path, 'r', newline='') as file:
         reader = csv.reader(file)        
         for row_num, row in enumerate(reader):
@@ -41,6 +38,7 @@ def ifTop(file_path, key, index, type):
                     
 
 def ifLeft(file_path, key, index, type):
+    global tracker
     with open(file_path, 'r', newline='') as file:
         reader = csv.reader(file)
         reader=zip(*reader)
@@ -69,7 +67,7 @@ def set_options(AllDDs):
                 all_new_options.append(options)
     return all_new_options
 
-def refresh_options(AllDDs):
+def refresh_options():
     all_options = []
     for dd in AllDDs:
             if dd != '':
@@ -81,3 +79,20 @@ def refresh_options(AllDDs):
                     
                 all_options.append(options)
     return all_options
+
+def save(values,ID):
+    file_path = "data/saved/Saved.csv"
+    if "Select" in values:
+        row = [ID,"Incomplete"] + values
+    else:
+         row = [ID,"Complete"] + values
+    with open(file_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(row)
+def empty():
+    empty=tracker
+    for key, value in empty.items():
+        for sub_key in value:
+            empty[key][sub_key] = 0
+    return empty
+         
