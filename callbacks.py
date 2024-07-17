@@ -5,13 +5,20 @@ from DDmaker import dropdowns, AllDDs,labels
 import dash_bootstrap_components as dbc
 import csv
 import time
+#stop unnecessary callbacks upon set-up, should not be needed but unfortunetly it is
 initial_load=True
+#empty tracker
 empty = dp.empty()
+#holds stuff while cycling through grid options
 temp_tracker=empty
-savable=False
-values = ["Select"] * (len(AllDDs)-1)
 backup_values=values
+#ensures save button is a valid option
+savable=False
+#current DD values
+values = ["Select"] * (len(AllDDs)-1)
+#skips timeout if no popover
 skip_timeout=False
+#keeps track of if backup is saved
 backup_saved=False
 def register_callbacks(app):
    
