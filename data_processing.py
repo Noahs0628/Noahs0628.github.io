@@ -95,4 +95,23 @@ def empty():
         for sub_key in value:
             empty[key][sub_key] = 0
     return empty
-         
+
+def override(values, ID, row_num):
+    file_path = "data/saved/Saved.csv"
+    
+    # Create the new row based on the values
+    if "Select" in values:
+        new_row = [ID, "Incomplete"] + values
+    else:
+        new_row = [ID, "Complete"] + values
+
+    # Read the existing data from the file
+    with open(file_path, mode='r', newline='') as file:
+        reader = csv.reader(file)
+        rows = list(reader)
+    # Modify the row if the first element matches backup_name
+        rows[row_num]=new_row
+    # Write the updated data back to the file
+    with open(file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(rows)

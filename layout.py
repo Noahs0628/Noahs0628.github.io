@@ -74,7 +74,7 @@ def create_layout(app: dash.Dash) -> html.Div:
                             dbc.Popover(
                                 className="popover",
                                 children=[
-                                    dbc.PopoverBody("Monopoint is incomplete. Make sure to add finish the details when your design is finalized"),
+                                    dbc.PopoverBody("Incomplete... Please finish later."),
                                 ],
                                 id="notdone",
                                 is_open=False,
@@ -83,7 +83,7 @@ def create_layout(app: dash.Dash) -> html.Div:
                                 hide_arrow=True,
                             ),
                             dbc.Button("Clear", id="clear-button", color="danger", className="clear-button"),
-                            dbc.Button("Save",id="save-button", color="success", className="save-button"),
+                            dbc.Button("Save As",id="save-button", color="success", className="save-button"),
                             html.Div(id="save-as-button"),
                             dbc.Row([
                                 dbc.Col(
@@ -104,6 +104,15 @@ def create_layout(app: dash.Dash) -> html.Div:
                                         ]
                                     ),
                                 ),
+                                dbc.Col(
+                                    html.Div(
+                                        id='grid-container-3',
+                                        className='grid-container',
+                                        children=[
+                                            html.Div(id=f'grid-button-{i}', className='grid-button') for i in range(8, 12)
+                                        ]
+                                    ),
+                                ),
                             ]),
                            html.Div(id="edit-button"),
                            html.Div(id="delete-button"),
@@ -113,6 +122,6 @@ def create_layout(app: dash.Dash) -> html.Div:
                     )
                 ]
             ),
-            html.Div(id='output-container'),
+            dcc.Input(id='dummy',type='hidden', value='callbackData'),
         ],
     )

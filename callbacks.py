@@ -1,290 +1,358 @@
-from dash import Input, Output, html,State, ctx, callback_context
-from dash.exceptions import PreventUpdate
-import data_processing as dp
-from DDmaker import dropdowns, AllDDs,labels
-import dash_bootstrap_components as dbc
 import csv
 import time
-#stop unnecessary callbacks upon set-up, should not be needed but unfortunetly it is
-initial_load=True
-#empty tracker
+from dash import Dash, html, Input, Output, State, ctx, callback_context
+import dash_bootstrap_components as dbc
+import data_processing as dp
+from DDmaker import dropdowns, AllDDs, labels
+########################
+#READ ME
+#
+# IK IT IS MUCH LESS EFFICIENT TO SORT BY INPUTS RATHER THAN OUTPUTS
+# WILL FIX LTR
+# TOO HARD TO PLAN OUT IF GROUPING BY OUTPUTS, EASIER TO TRANSLATE AFTER
+
+########################
+# File path for saved data
+file_path = "data/saved/Saved.csv"
+
+# Initialize global variables
 empty = dp.empty()
-#holds stuff while cycling through grid options
-temp_tracker=empty
-backup_values=values
-#ensures save button is a valid option
-savable=False
-#current DD values
-values = ["Select"] * (len(AllDDs)-1)
-#skips timeout if no popover
-skip_timeout=False
-#keeps track of if backup is saved
-backup_saved=False
+values = ["Select"] * (len(AllDDs) - 1)
+temp_tracker = empty
+current_options = {}
+backup_options=current_options
+backup_values = values
+backup_name = ""
+confirmed=False
+backup_saved = False
+grid_button=-1
+editMode=False
 def register_callbacks(app):
-   
-   
-    #####################################################
-    #updates options after a value has been chosed/changed
+   #loads buttons
+    @app.callback(
+        [Output(f'grid-button-{i}', "children") for i in range(12)]+
+        [
+            Output('clear-button', 'disabled'),
+            Output('save-button', 'disabled'),
+            Output('save-as-button', 'children'),
+            Output("edit-button", "children"),
+            Output("delete-button", "children"),
+            Output("cancel-button", "children"),
+        ],
+        [Input('dummy', 'value')]
+    )
+    #loads buttons
+    def load_buttons(dummy):
+        buttons = []
+        with open(file_path, 'r', newline='') as file:
+            reader = csv.reader(file)
+            row_num = -1
+            for row_num, row in enumerate(reader):
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+            for a in range((row_num + 1), 12):
+                buttons.append(html.Div())
+        return buttons+[False, False, html.Div(), html.Div(), html.Div(), html.Div()]
+    #updates tracker after value is changed
     @app.callback(
         [Output(dd, 'options') for dd in dropdowns],
         [Input(dd, 'value') for dd in dropdowns]
     )
     def update(*args):
-        global values
-        # find which dd triggerd callback
+        global values, current_options
         dd_ID = callback_context.triggered[0]['prop_id'].split('.')[0]
         index = AllDDs.index(dd_ID) - 1
-
-        # Get the current value of the triggered dropdown
+        #find which dropdown triggered CB
         dd_value = args[index]
-
-        # Get the previous value of the triggered dropdown
         prev_value = values[index]
-
-        # Update the previous values list
+        #update values with new value
         values[index] = dd_value
-
-        # Update the compatibility tables based on the previous and current value
+        #undo any changes to tracker prev value did
+        #update options based on new value
         if dd_value is not None and prev_value != "Select":
-            #undo any changes previous option did
             dp.update_options(dd_ID, prev_value, +1)
         if dd_value is not None and dd_value != "Select":
-            #make changes for current selection
             dp.update_options(dd_ID, dd_value, -1)
-
-        # get new options for all dropdowns
+        #update options
         options = dp.set_options(AllDDs)
-
+        current_options = options
         return options
     
-    
-    #####################################################
-    #Deterimine if selections are savable/Throw popover if needed
+        
+    #save mega callback
     @app.callback(
-        [Output("unnamed", "is_open",allow_duplicate=True),
-        Output("inuse", "is_open",allow_duplicate=True),
-        Output("notdone", "is_open",allow_duplicate=True),
-        [Input('save-button', 'n_clicks')]],
-        [State('name-input', 'value')],
-
+        [
+            Output("unnamed", "is_open", allow_duplicate=True),
+            Output("inuse", "is_open", allow_duplicate=True),
+            Output("notdone", "is_open", allow_duplicate=True),
+            Output('name-input', 'value', allow_duplicate=True),
+            *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
+            *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
+            *[Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
+            Output('clear-button', 'disabled', allow_duplicate=True),
+            Output('save-button', 'disabled', allow_duplicate=True),
+            Output('save-as-button', 'children', allow_duplicate=True),
+            Output("edit-button", "children", allow_duplicate=True),
+            Output("delete-button", "children", allow_duplicate=True),
+            Output("cancel-button", "children", allow_duplicate=True),
+        ],
+        [
+            Input("save-button", "n_clicks"),
+            Input("save-as-button", "n_clicks"),
+            Input('dummy','value'),
+        ],
+        [State("name-input", 'value')],
         prevent_initial_call=True
     )
-
-    def check_name(click, value):
-        global initial_load
-        #if initial load do nthg
-        if initial_load==True:
-            return False,False,False  
-        global savable, values,skip_timeout
-        #used to skip function closing popovers if not necessary
+    def save_button(save1, save2,dummy, name):
+        global skip_timeout, values, current_options,backup_saved,backup_name,grid_button,editMode
+        #initialize return variables
+        popovers = [False, False, False]
+        buttons = []
+        options = []
+        new_name = ""
         skip_timeout=False
-        #assume not savable, will change if it is
-        savable = False
-        #if unnamed return that popover
-        if value is None or value == "":     
-            return [True,False,False]
-        
-        with open("data/saved/Saved.csv", mode='r', newline='') as file:
+        trigger = ctx.triggered[0]['prop_id'].split('.')[0]
+        #if no name throw popover at end
+        if not name:
+            popovers = [True, False, False]
+        else:
+            with open(file_path, 'r') as file:
+                reader = csv.reader(file)
+                for row in reader:
+                    if row[0] == name:
+                        #if save button (not save-as) was 
+                        #pressed & the name is already used throw popover at end
+                        if trigger == "save-button":
+                            popovers = [False, True, False]
+                        break
+        #if no popovers are thrown this name can be saved
+        if popovers==[False, False, False]:        
+            #if incomplete throw popover but save anyway
+            if "Select" in values:
+                popovers = [False, False, True]
+            if trigger == "save-button":
+                dp.save(values, name)
+            else:
+                dp.override(values, name, grid_button)
+            #if doing so reset everything
+            if editMode:
+                dp.tracker=temp_tracker
+                options=backup_options
+                values=backup_values
+                new_name=backup_name    
+            else:
+                dp.tracker = dp.empty()
+                options = dp.refresh_options()
+                values = ["Select"] * len(dropdowns)
+                new_name = ""
+            backup_saved=False
+            editMode=False
+            
+        else:
+            #if not savable keep current stuff (values remain unchanged)
+            options = current_options
+            new_name = name
+        #show all buttons
+        with open(file_path, 'r') as file:
             reader = csv.reader(file)
-            for row in reader:
-                #prevent save if name is alr in use, throw popover
-                if row[0] == value:  
-                    return [False,True,False]
-        
-        #techinically savable atp
-        savable = True
-        #However, throw "incomplete" popover if not complete
-        if "Select" in values:
-            return [False,False,True]
-        #if complete there will be no popover->skip the timeout function to close them
-        skip_timeout=True
-        return [False,False,False]
-    
-    
-    #####################################################
-    #Clear options/name box when clear or save(if possible) is pressed
+            row_num = -1
+            for row_num, row in enumerate(reader):
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+            for i in range(row_num + 1, 12):
+                buttons.append(html.Div())
+
+        if not editMode:
+            return (
+                popovers +
+                [new_name] +
+                values +
+                options +
+                buttons +
+                [False, False, html.Div(), html.Div(), html.Div(), html.Div()]
+            )
+        else:
+            return (
+                popovers +
+                [new_name] +
+                values +
+                options +
+                buttons +
+                [False, False] +
+                [dbc.Button("Save", color="success", className="save-button")] +
+                [html.Div()] +
+                [html.Div()] +
+                [dbc.Button("Cancel", color="grey", className="cancel-button")]
+            )
+    #turns off popovers if they're being shown
     @app.callback(
-        Output('name-input', 'value'),
-        [Output(dd, 'value', allow_duplicate=True) for dd in dropdowns] +
-        [Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
         [
-            Input('clear-button', 'n_clicks'),
-            Input('save-button', 'n_clicks'),
+            Output("unnamed", "is_open", allow_duplicate=True),
+            Output("inuse", "is_open", allow_duplicate=True),
+            Output("notdone", "is_open", allow_duplicate=True),
         ],
         [
-            State('name-input', 'value'),
+            Input('save-button', 'n_clicks'),
+            Input('save-as-button', 'n_clicks')
         ],
         prevent_initial_call=True
     )
-    def reset_save(clear_clicks, save_clicks, name_input_value):
-        #imports if the current selections can be saved
-        global savable,values
-        # leave if not savable
-        if ctx.triggered[0]['prop_id'].split('.')[0] == 'save-button' and not savable:
-            raise PreventUpdate
-        
-        # save if savable
-        if ctx.triggered[0]['prop_id'].split('.')[0] == 'save-button' and savable:
-            # Implement your save logic here
-            dp.save(values, name_input_value)
+    def turnoff(*clicks):
+        global skip_timeout
+        if not skip_timeout:
+            time.sleep(2)
+        return [False, False, False]
+    #grid button mega callback
+    @app.callback(
+        [
+        *[Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
+        *[Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
+        *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
+        Output('clear-button', 'disabled', allow_duplicate=True),
+        Output('save-button', 'disabled', allow_duplicate=True),
+        Output('save-as-button', 'children', allow_duplicate=True),
+        Output("edit-button", "children", allow_duplicate=True),
+        Output("delete-button", "children", allow_duplicate=True),
+        Output("cancel-button", "children", allow_duplicate=True),
+        Output('name-input', 'value', allow_duplicate=True),
+        ],
+        [[Input(f'grid-button-{i}', 'n_clicks') for i in range(12)]],
+        [State('name-input', 'value')],
+        prevent_initial_call=True
+    )
+    def grid_button(clicks, name):
+        global backup_name, backup_saved, backup_values, temp_tracker,values,current_options,backup_options,grid_button
+        #initialize return vars
+        buttons = []
+        new_name = ""
+        #disable all DDs when cycling
+        disable=[True] * (len(AllDDs) - 1)
+        #figure out which button was pressed
+        triggered_component = ctx.triggered[0]['prop_id'].split('.')[0]
+        class_names = [0] * 12
+        index = int(triggered_component.split("button-")[1])
+        grid_button=index
+        class_names[index] = 1
+        #if first button pressed when cycling save values
+        #otherwise ignore
+        if backup_saved==False:   
+            backup_values = values
+            backup_options=current_options
+            temp_tracker = dp.tracker
+            backup_name = name
+            if backup_name is None:
+                backup_name=""
+            backup_saved = True
+        #update buttons to show highlight whichever is selected
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            row_num = -1
+            for row_num, row in enumerate(reader):
+                if class_names[row_num] == 0:
+                    buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+                else:
+                    #for selected button get name and values to display
+                    buttons.append(dbc.Button(row[0], id=row[0], className="selectedbutton"))
+                    new_name = row[0]
+                    new_vals=row[2:]
+                    values=new_vals
+            for i in range(row_num + 1, 12):
+                buttons.append(html.Div())
 
-        # resets tracker and options/values, atp savable==true or clear==true
+        return (
+            buttons+
+            disable+
+            [*new_vals]+
+            [True, True]+
+            [html.Div(),
+            dbc.Button("Edit", color="secondary", className="edit-button"),
+            html.Div(),
+            dbc.Button("Cancel", color="grey", className="cancel-button"),
+            new_name]            
+        )
+    #cancel button mega callback
+    @app.callback(
+        *[Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
+        Output('clear-button', 'disabled', allow_duplicate=True),
+        Output('save-button', 'disabled', allow_duplicate=True),
+        Output('save-as-button', 'children', allow_duplicate=True),
+        Output("edit-button", "children", allow_duplicate=True),
+        Output("delete-button", "children", allow_duplicate=True),
+        Output("cancel-button", "children", allow_duplicate=True),
+        Output('name-input', 'value', allow_duplicate=True),
+        *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
+        *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
+        *[Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
+    
+        [Input('cancel-button', 'n_clicks')],
+        prevent_initial_call=True
+    )
+    def cancel(click):
+        global backup_saved,backup_name,editMode,values,backup_name,current_options
+        buttons = []
+        disabled = [False] * (len(AllDDs) - 1)
+        #reset buttons so none are highlighted
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            row_num = -1
+            for row_num, row in enumerate(reader):
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+            for a in range(row_num + 1, 12):
+                buttons.append(html.Div())
+        #values return to value when saved
+        dp.tracker = temp_tracker
+        current_options=backup_options
+        values=backup_values
+        backup_saved = False
+        editMode=False
+
+        return (
+            buttons + 
+            [False, False, html.Div(), html.Div(), html.Div(), html.Div(), backup_name]+
+            [*backup_options]+ #saved from starting to cycle
+            [*backup_values] + #this too
+            disabled)
+    #clear button mega callback
+    @app.callback(
+        Output('name-input', 'value', allow_duplicate=True),
+        *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
+        *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
+        [Input('clear-button', 'n_clicks')],
+        [State('name-input', 'value')],
+        prevent_initial_call=True
+    )
+    def clear(click,name):
+        global current_options,values
+        #clear everythig and update necessary globals
         dp.tracker = dp.empty()
         options = dp.refresh_options()
-        values = ["Select"] * len(dropdowns)
-        savable=False
-        return "", *values, *options
-    
-    
-    #####################################################
-    #Turns off the popover, couldn't find a less intrusive way :/
+        current_options=options
+        new_vals = ["Select"] * len(dropdowns)
+        values=new_vals
+        return [""]+ [*new_vals]+ [*options]
+    #edit button mega callbacl
     @app.callback(
-        [Output("unnamed", "is_open"),
-        Output("inuse", "is_open"),
-        Output("notdone", "is_open"),],
-        [Input('save-button', 'n_clicks')],
+        Output('clear-button', 'disabled', allow_duplicate=True),
+        Output('save-button', 'disabled', allow_duplicate=True),
+        Output('save-as-button', 'children', allow_duplicate=True),
+        Output("edit-button", "children", allow_duplicate=True),
+        Output("delete-button", "children", allow_duplicate=True),
+        Output("cancel-button", "children", allow_duplicate=True),
+        *[Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
+        *[ Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
+        [Input('edit-button', 'n_clicks')],
         prevent_initial_call=True
     )
-    def turnoff(click):
-        global skip_timeout
-        if ~skip_timeout:    
-            time.sleep(2)
-        return [False,False,False]
-    
-    
-    #####################################################
-    #add/change grid buttons in some way depending on what button was pressed 
-    @app.callback(
-        [
-            Output(f'grid-button-{i}', "children") for i in range(8)
-        ] ,
-        [
-            [Input(f'grid-button-{i}', "n_clicks") for i in range(8)],
-            Input('cancel-button', "n_clicks"),
-            Input('save-button', 'n_clicks'),
-        ],
-
-    )
-    def grid_buttons(grid_clicks, cancel_clicks, save_clicks):
-            global backup_values,backup_saved,temp_tracker
-            #get id of what triggered CB
-            triggered_component=ctx.triggered[0]['prop_id'].split('.')[0]
-            class_names=[0]*8
-            buttons=[]
-            #if a grid button was selected highlight that button
-            if "grid-button" in triggered_component:
-                index=int(triggered_component.split("button-")[1])
-                class_names[index]=1
-                #if cycling through saved, only save work in progress
-                if not backup_saved:   
-                    backup_values=values
-                    temp_tracker=dp.tracker
-                    backup_saved=True
-            file_path = "data/saved/Saved.csv"
-            with open(file_path, 'r', newline='') as file:
-                reader = csv.reader(file)        
-                row_num=-1
-                for row_num, row in enumerate(reader):
-                    if class_names[row_num]==0:
-                        i=dbc.Button(row[0],id=row[0],class_name=row[1])
-                        
-                    else:
-                        i=dbc.Button(row[0],id=row[0],class_name="selectedbutton")
-                    buttons.append(i)
-                for a in range((row_num+1),8):
-                    buttons.append(html.Div())
-            #shows all grid buttons, highlights one selected if applicable
-            return buttons
-    
-    
-    #####################################################
-    #Show/hide cancel/edit buttons
-    @app.callback(
-        [
-            Output('clear-button','disabled'),
-            Output('save-button','disabled'),
-            Output('save-as-button','children'),
-            Output("edit-button", "children"),
-            Output("delete-button", "children"),
-            Output("cancel-button", "children"),
-        ],
-        [
-            [Input(f'grid-button-{i}', "n_clicks") for i in range(8)],
-            Input('cancel-button', "n_clicks"),
-            Input('save-button', 'n_clicks'),
-            Input('edit-button', 'n_clicks'),
-        ],
-
-    )
-    def update_buttons(grid_clicks, cancel_clicks, save_clicks, edit_click ):
-            global skip_timeout,initial_load
-            #get triggered ID and return proper buttons
-            triggered_component=ctx.triggered[0]['prop_id'].split('.')[0]
-            if "grid-button" in triggered_component:
-                return [
-                        True,True,
-                        html.Div(),
-                        dbc.Button("Edit", color="secondary", className="edit-button"),
-                        html.Div(),
-                        dbc.Button("Cancel", color="grey", className="cancel-button")]
-            
-            
-            if triggered_component=="edit-button":
-                return [
-                        False,False,
-                        dbc.Button("Save As",  color="success", className="save-button"),
-                        html.Div(),
-                        html.Div(),
-                        dbc.Button("Cancel", color="grey", className="cancel-button")]
-            
-            else: 
-                initial_load=False
-                return [False,False, html.Div(), html.Div(),html.Div(),html.Div()]   
-    
-    
-    #####################################################
-    #Show grid button values when clicked
-    @app.callback(       
-        [Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
-        [Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
-        [Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
-        [Input(f'grid-button-{i}', "n_clicks") for i in range(8)],
-        Input('cancel-button', 'n_clicks'),
-        prevent_initial_call=True
-    )
-    def grid_button_value(*args):
-        global values, backup_saved, backup_values, temp_tracker
-        #get id
-        triggered_component = ctx.triggered[0]['prop_id'].split('.')[0]
-        disabled = [True] * (len(AllDDs) - 1)
-        #if cancel button return the work in progess values/options
-        if triggered_component == "cancel-button":
-            #reset tracker to the back up and reset backup saved var
-            dp.tracker = temp_tracker
-            values = backup_values
-            backup_saved = False
-            #enable buttons
-            disabled = [False] * (len(AllDDs) - 1)
-        else:
-            dp.tracker =dp.empty()
-            class_names = [0] * 8
-            index = int(triggered_component.split("button-")[1])
-            class_names[index] = 1
-            file_path = "data/saved/Saved.csv"
-            with open(file_path, 'r', newline='') as file:
-                reader = csv.reader(file)        
-                row_num = -1
-                for row_num, row in enumerate(reader):
-                    if class_names[row_num] == 1:
-                        #set values to saved data
-                        values = row[2:]
-                        
-        i = 0
-        for dd in labels:
-            dp.update_options(dd, values[i], -1)
-            i += 1
-            
-        options = dp.refresh_options()
-        # Ensure options, values, and disabled are iterables and return them correctly
-        return [*options, *values, *disabled]
+    def edit(click):
+        global editMode
+        editMode=True
+        divs=[html.Div()] * 12
+        disable=[False] * (len(AllDDs) - 1)
+        return ([False, False]+
+                [dbc.Button("Save", color="success", className="save-button")]+
+                [html.Div()]+
+                [html.Div()]+
+                [dbc.Button("Cancel", color="grey", className="cancel-button")]+
+                disable+
+                divs
+                )
 
