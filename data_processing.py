@@ -7,12 +7,13 @@ directory = r"data"
 #updates the values in the working compat tables when any value is changed
 def update_options(dd_ID,dd_Value, type):
     #type represents what to do, + means a value represents a deselected value requiring the addition of what was origionally removed
-    #- indicated a value was just changed requirng the notation of any incompatible values
+    #   - indicated a value was just changed requiring a change to be made for any incompatible values
     key=dd_ID.split('-')[0]
     for filename in os.listdir(directory):
-       
+        #check for compatability tables that use the DD that was changed
         if key in filename:    
             if ((not filename.endswith('_copy')) and (not filename.endswith('options.csv'))):
+                #determine if changed DD is on top or left of table, and call correct function
                 top = filename.split('_')[0]
                 
                 left = filename.split('_')[1].split('.')[0]
@@ -28,15 +29,16 @@ def update_options(dd_ID,dd_Value, type):
 #handles the case if the changed value is on the top of the compat table
 def ifTop(file_path, key, index, type):
     global tracker
+    #update tracker based on compatability table
     with open(file_path, 'r', newline='') as file:
         reader = csv.reader(file)        
         for row_num, row in enumerate(reader):
             if row_num!=0:                
 
-                if row[index] == '0':  # Corrected: Comparison should be with string '0'
+                if row[index] == '0': 
                     tracker[key][row[0]] += type
                     
-
+#same as top, just adjusted for left 
 def ifLeft(file_path, key, index, type):
     global tracker
     with open(file_path, 'r', newline='') as file:
@@ -45,11 +47,11 @@ def ifLeft(file_path, key, index, type):
         for row_num, row in enumerate(reader):
             if row_num!=0:                
 
-                if row[index] == '0':  # Corrected: Comparison should be with string '0'
+                if row[index] == '0':  
 
                     tracker[key][row[0]] += type
 
-    
+    #updated options based on what tracker contains
 def set_options(AllDDs):
     all_new_options = []
     for dd in AllDDs:
@@ -67,6 +69,7 @@ def set_options(AllDDs):
                 all_new_options.append(options)
     return all_new_options
 
+#gives fresh list of options after tracker has been reset
 def refresh_options():
     all_options = []
     for dd in AllDDs:
@@ -75,11 +78,11 @@ def refresh_options():
                 options = [{'label': 'Select', 'value': 'Select'}]    
                 for option, value in list(tracker[option_name].items()):                         
                         option_={'label': option, 'value': option}
-                        options.append(option_)  # Add the cell to the left to options
+                        options.append(option_) 
                     
                 all_options.append(options)
     return all_options
-
+#save as selection
 def save(values,ID):
     file_path = "data/saved/Saved.csv"
     if "Select" in values:
@@ -89,13 +92,14 @@ def save(values,ID):
     with open(file_path, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(row)
+#empties(resets) tracker
 def empty():
     empty=tracker
     for key, value in empty.items():
         for sub_key in value:
             empty[key][sub_key] = 0
     return empty
-
+#saves a selection by overriding previous choices
 def override(values, ID, row_num):
     file_path = "data/saved/Saved.csv"
     

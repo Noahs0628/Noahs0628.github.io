@@ -16,15 +16,19 @@ from DDmaker import dropdowns, AllDDs, labels
 file_path = "data/saved/Saved.csv"
 
 # Initialize global variables
-empty = dp.empty()
+#
+#
+#current stuff
 values = ["Select"] * (len(AllDDs) - 1)
-temp_tracker = empty
 current_options = {}
+
+#backup values
+temp_tracker = dp.empty()
 backup_options=current_options
 backup_values = values
 backup_name = ""
-confirmed=False
 backup_saved = False
+#other
 grid_button=-1
 editMode=False
 def register_callbacks(app):
@@ -346,6 +350,7 @@ def register_callbacks(app):
     )
     def edit(click):
         global editMode,values,current_options
+        #for selected grid's labels update tracker and options, done here to reduce processing
         dp.tracker=dp.empty()
         for i in range(len(AllDDs)-1):
             print()
