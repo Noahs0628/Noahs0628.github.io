@@ -339,11 +339,22 @@ def register_callbacks(app):
         Output("cancel-button", "children", allow_duplicate=True),
         *[Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
         *[ Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
+        *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
+        *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
         [Input('edit-button', 'n_clicks')],
         prevent_initial_call=True
     )
     def edit(click):
-        global editMode
+        global editMode,values,current_options
+        dp.tracker=dp.empty()
+        for i in range(len(AllDDs)-1):
+            print()
+            dd_ID = labels[i]+"-"
+            dd_value= values[i]
+            dp.update_options(dd_ID, dd_value, -1)
+        #update options
+        options = dp.set_options(AllDDs)
+        current_options = options        
         editMode=True
         divs=[html.Div()] * 12
         disable=[False] * (len(AllDDs) - 1)
@@ -353,6 +364,8 @@ def register_callbacks(app):
                 [html.Div()]+
                 [dbc.Button("Cancel", color="grey", className="cancel-button")]+
                 disable+
-                divs
+                divs+
+                [*values]+
+                [*options]
                 )
 
