@@ -115,9 +115,8 @@ def create_layout(app: dash.Dash) -> html.Div:
                                 ),
                             ]),
                            html.Div(id="edit-button"),
-                           html.Div(id="delete-button"),
                            html.Div(id="cancel-button"),
-                           html.Div(id="empty-holder"),
+                           html.Div(id="delete-button"),
                         ]
                     )
                 ]

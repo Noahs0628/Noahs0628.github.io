@@ -29,7 +29,7 @@ backup_values = values
 backup_name = ""
 backup_saved = False
 #other
-grid_button=-1
+button_num=-1
 editMode=False
 def register_callbacks(app):
    #loads buttons
@@ -108,7 +108,7 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def save_button(save1, save2,dummy, name):
-        global skip_timeout, values, current_options,backup_saved,backup_name,grid_button,editMode
+        global skip_timeout, values, current_options,backup_saved,backup_name,button_num,editMode
         #initialize return variables
         popovers = [False, False, False]
         buttons = []
@@ -137,7 +137,7 @@ def register_callbacks(app):
             if trigger == "save-button":
                 dp.save(values, name)
             else:
-                dp.override(values, name, grid_button)
+                dp.override(values, name, button_num)
             #if doing so reset everything
             if editMode:
                 dp.tracker=temp_tracker
@@ -224,7 +224,7 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def grid_button(clicks, name):
-        global backup_name, backup_saved, backup_values, temp_tracker,values,current_options,backup_options,grid_button
+        global backup_name, backup_saved, backup_values, temp_tracker,values,current_options,backup_options,button_num
         #initialize return vars
         buttons = []
         new_name = ""
@@ -234,7 +234,8 @@ def register_callbacks(app):
         triggered_component = ctx.triggered[0]['prop_id'].split('.')[0]
         class_names = [0] * 12
         index = int(triggered_component.split("button-")[1])
-        grid_button=index
+        button_num=index
+        print(button_num)
         class_names[index] = 1
         #if first button pressed when cycling save values
         #otherwise ignore
@@ -269,10 +270,71 @@ def register_callbacks(app):
             [True, True]+
             [html.Div(),
             dbc.Button("Edit", color="secondary", className="edit-button"),
-            html.Div(),
+            dbc.Button("Delete Fixture", color="grey", className="delete-button"),
             dbc.Button("Cancel", color="grey", className="cancel-button"),
             new_name]            
         )
+    #delete button
+    @app.callback(
+        *[Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
+        Output('clear-button', 'disabled', allow_duplicate=True),
+        Output('save-button', 'disabled', allow_duplicate=True),
+        Output('save-as-button', 'children', allow_duplicate=True),
+        Output("edit-button", "children", allow_duplicate=True),
+        Output("delete-button", "children", allow_duplicate=True),
+        Output("cancel-button", "children", allow_duplicate=True),
+        Output('name-input', 'value', allow_duplicate=True),
+        *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
+        *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
+        *[Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
+    
+        [Input('delete-button', 'n_clicks')],
+        prevent_initial_call=True
+    )
+
+    def delete(click):
+        global backup_saved, backup_name, editMode, values, current_options, button_num
+        
+        # Read the existing data from the file
+        with open(file_path, mode='r', newline='') as file:
+            reader = csv.reader(file)
+            rows = list(reader)
+        
+        # Filter out the row to be deleted
+        new_rows = [row for row_num, row in enumerate(rows) if row_num != button_num]
+
+        # Write the updated data back to the file
+        with open(file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(new_rows)
+        
+        buttons = []
+        disabled = [False] * (len(AllDDs) - 1)
+        
+        # Reset buttons so none are highlighted
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            row_num = -1
+            for row_num, row in enumerate(reader):
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+            for a in range(row_num + 1, 12):
+                buttons.append(html.Div())
+        
+        # Reset values and options
+        dp.tracker = temp_tracker
+        current_options = backup_options
+        values = backup_values
+        backup_saved = False
+        editMode = False
+
+        return (
+            buttons + 
+            [False, False, html.Div(), html.Div(), html.Div(), html.Div(), backup_name] +
+            [*backup_options] +  # Include saved options
+            [*backup_values] +   # Include saved values
+            disabled
+        )
+        
     #cancel button mega callback
     @app.callback(
         *[Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
