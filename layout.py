@@ -117,10 +117,18 @@ def create_layout(app: dash.Dash) -> html.Div:
                            html.Div(id="edit-button"),
                            html.Div(id="cancel-button"),
                            html.Div(id="delete-button"),
+                           html.Div(
+                                className="text-box",
+                                children=[
+                                    html.Label("Notes and Custom Specifications"),
+                                    dcc.Textarea(id='notes-input', className='notes-input', style={"width": "100%", "height": "80px"}),  # Use dcc.Textarea for multiline input
+                                ]
+                            ),
                         ]
                     )
                 ]
             ),
-            dcc.Input(id='dummy',type='hidden', value='callbackData'),
+            dcc.Input(id='dummy', type='hidden', value='callbackData'),
         ],
     )
+

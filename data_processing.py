@@ -83,12 +83,12 @@ def refresh_options():
                 all_options.append(options)
     return all_options
 #save as selection
-def save(values,ID):
+def save(values,ID, note):
     file_path = "data/saved/Saved.csv"
     if "Select" in values:
-        row = [ID,"Incomplete"] + values
+        row = [ID, note, "Incomplete"] + values
     else:
-         row = [ID,"Complete"] + values
+         row = [ID, note, "Complete"] + values
     with open(file_path, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(row)
@@ -100,14 +100,14 @@ def empty():
             empty[key][sub_key] = 0
     return empty
 #saves a selection by overriding previous choices
-def override(values, ID, row_num):
+def override(values, ID, row_num,note):
     file_path = "data/saved/Saved.csv"
     
     # Create the new row based on the values
     if "Select" in values:
-        new_row = [ID, "Incomplete"] + values
+        new_row = [ID, note, "Incomplete"] + values
     else:
-        new_row = [ID, "Complete"] + values
+        new_row = [ID, note, "Complete"] + values
 
     # Read the existing data from the file
     with open(file_path, mode='r', newline='') as file:

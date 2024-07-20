@@ -27,6 +27,7 @@ temp_tracker = dp.empty()
 backup_options=current_options
 backup_values = values
 backup_name = ""
+backup_notes=""
 backup_saved = False
 #other
 button_num=-1
@@ -52,7 +53,7 @@ def register_callbacks(app):
             reader = csv.reader(file)
             row_num = -1
             for row_num, row in enumerate(reader):
-                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[2]))
             for a in range((row_num + 1), 12):
                 buttons.append(html.Div())
         return buttons+[False, False, html.Div(), html.Div(), html.Div(), html.Div()]
@@ -98,6 +99,7 @@ def register_callbacks(app):
             Output("edit-button", "children", allow_duplicate=True),
             Output("delete-button", "children", allow_duplicate=True),
             Output("cancel-button", "children", allow_duplicate=True),
+            Output("notes-input", "value", allow_duplicate=True),
         ],
         [
             Input("save-button", "n_clicks"),
@@ -105,16 +107,17 @@ def register_callbacks(app):
             Input('dummy','value'),
         ],
         [State("name-input", 'value')],
+        [State("notes-input", 'value')],
         prevent_initial_call=True
     )
-    def save_button(save1, save2,dummy, name):
-        global skip_timeout, values, current_options,backup_saved,backup_name,button_num,editMode
+    def save_button(save1, save2,dummy, name,notes):
+        global values, current_options,backup_saved,backup_name,button_num,editMode,backup_notes
         #initialize return variables
         popovers = [False, False, False]
         buttons = []
         options = []
         new_name = ""
-        skip_timeout=False
+        new_notes=""
         trigger = ctx.triggered[0]['prop_id'].split('.')[0]
         #if no name throw popover at end
         if not name:
@@ -135,20 +138,22 @@ def register_callbacks(app):
             if "Select" in values:
                 popovers = [False, False, True]
             if trigger == "save-button":
-                dp.save(values, name)
+                dp.save(values, name,notes)
             else:
-                dp.override(values, name, button_num)
+                dp.override(values, name, button_num,notes)
             #if doing so reset everything
             if editMode:
                 dp.tracker=temp_tracker
                 options=backup_options
                 values=backup_values
                 new_name=backup_name    
+                new_notes=backup_notes
             else:
                 dp.tracker = dp.empty()
                 options = dp.refresh_options()
                 values = ["Select"] * len(dropdowns)
                 new_name = ""
+                new_notes=""
             backup_saved=False
             editMode=False
             
@@ -156,12 +161,13 @@ def register_callbacks(app):
             #if not savable keep current stuff (values remain unchanged)
             options = current_options
             new_name = name
+            new_notes=notes
         #show all buttons
         with open(file_path, 'r') as file:
             reader = csv.reader(file)
             row_num = -1
             for row_num, row in enumerate(reader):
-                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[2]))
             for i in range(row_num + 1, 12):
                 buttons.append(html.Div())
 
@@ -172,7 +178,8 @@ def register_callbacks(app):
                 values +
                 options +
                 buttons +
-                [False, False, html.Div(), html.Div(), html.Div(), html.Div()]
+                [False, False, html.Div(), html.Div(), html.Div(), html.Div()]+
+                [new_notes]
             )
         else:
             return (
@@ -185,7 +192,8 @@ def register_callbacks(app):
                 [dbc.Button("Save", color="success", className="save-button")] +
                 [html.Div()] +
                 [html.Div()] +
-                [dbc.Button("Cancel", color="grey", className="cancel-button")]
+                [dbc.Button("Cancel", color="grey", className="cancel-button")]+
+                [new_notes]
             )
     #turns off popovers if they're being shown
     @app.callback(
@@ -201,9 +209,7 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def turnoff(*clicks):
-        global skip_timeout
-        if not skip_timeout:
-            time.sleep(2)
+        time.sleep(2)
         return [False, False, False]
     #grid button mega callback
     @app.callback(
@@ -218,16 +224,20 @@ def register_callbacks(app):
         Output("delete-button", "children", allow_duplicate=True),
         Output("cancel-button", "children", allow_duplicate=True),
         Output('name-input', 'value', allow_duplicate=True),
+        Output('notes-input', 'value', allow_duplicate=True),
+        Output('notes-input', 'disabled', allow_duplicate=True),
         ],
         [[Input(f'grid-button-{i}', 'n_clicks') for i in range(12)]],
         [State('name-input', 'value')],
+        [State('notes-input', 'value')],
         prevent_initial_call=True
     )
-    def grid_button(clicks, name):
-        global backup_name, backup_saved, backup_values, temp_tracker,values,current_options,backup_options,button_num
+    def grid_button(clicks, name,notes):
+        global backup_name, backup_saved, backup_values, temp_tracker,values,current_options,backup_options,button_num,backup_notes
         #initialize return vars
         buttons = []
         new_name = ""
+        new_notes=""
         #disable all DDs when cycling
         disable=[True] * (len(AllDDs) - 1)
         #figure out which button was pressed
@@ -235,17 +245,19 @@ def register_callbacks(app):
         class_names = [0] * 12
         index = int(triggered_component.split("button-")[1])
         button_num=index
-        print(button_num)
         class_names[index] = 1
         #if first button pressed when cycling save values
         #otherwise ignore
         if backup_saved==False:   
             backup_values = values
+            backup_notes=notes
             backup_options=current_options
             temp_tracker = dp.tracker
             backup_name = name
             if backup_name is None:
                 backup_name=""
+            if notes is None:
+                backup_notes=""
             backup_saved = True
         #update buttons to show highlight whichever is selected
         with open(file_path, 'r') as file:
@@ -253,12 +265,13 @@ def register_callbacks(app):
             row_num = -1
             for row_num, row in enumerate(reader):
                 if class_names[row_num] == 0:
-                    buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+                    buttons.append(dbc.Button(row[0], id=row[0], className=row[2]))
                 else:
                     #for selected button get name and values to display
                     buttons.append(dbc.Button(row[0], id=row[0], className="selectedbutton"))
                     new_name = row[0]
-                    new_vals=row[2:]
+                    new_notes=row[1]
+                    new_vals=row[3:]
                     values=new_vals
             for i in range(row_num + 1, 12):
                 buttons.append(html.Div())
@@ -272,7 +285,9 @@ def register_callbacks(app):
             dbc.Button("Edit", color="secondary", className="edit-button"),
             dbc.Button("Delete Fixture", color="grey", className="delete-button"),
             dbc.Button("Cancel", color="grey", className="cancel-button"),
-            new_name]            
+            new_name,
+            new_notes]+
+            [True]     
         )
     #delete button
     @app.callback(
@@ -287,6 +302,8 @@ def register_callbacks(app):
         *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
         *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
         *[Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
+        Output('notes-input', 'value', allow_duplicate=True),
+        Output('notes-input', 'disabled', allow_duplicate=True),
     
         [Input('delete-button', 'n_clicks')],
         prevent_initial_call=True
@@ -316,7 +333,7 @@ def register_callbacks(app):
             reader = csv.reader(file)
             row_num = -1
             for row_num, row in enumerate(reader):
-                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[2]))
             for a in range(row_num + 1, 12):
                 buttons.append(html.Div())
         
@@ -326,13 +343,16 @@ def register_callbacks(app):
         values = backup_values
         backup_saved = False
         editMode = False
+        
 
         return (
             buttons + 
             [False, False, html.Div(), html.Div(), html.Div(), html.Div(), backup_name] +
             [*backup_options] +  # Include saved options
             [*backup_values] +   # Include saved values
-            disabled
+            disabled+
+            [""]+
+            [False]
         )
         
     #cancel button mega callback
@@ -348,7 +368,8 @@ def register_callbacks(app):
         *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
         *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
         *[Output(dd, 'disabled', allow_duplicate=True) for dd in dropdowns],
-    
+        Output('notes-input', 'value', allow_duplicate=True),    
+        Output('notes-input', 'disabled', allow_duplicate=True),
         [Input('cancel-button', 'n_clicks')],
         prevent_initial_call=True
     )
@@ -361,7 +382,7 @@ def register_callbacks(app):
             reader = csv.reader(file)
             row_num = -1
             for row_num, row in enumerate(reader):
-                buttons.append(dbc.Button(row[0], id=row[0], className=row[1]))
+                buttons.append(dbc.Button(row[0], id=row[0], className=row[2]))
             for a in range(row_num + 1, 12):
                 buttons.append(html.Div())
         #values return to value when saved
@@ -376,12 +397,15 @@ def register_callbacks(app):
             [False, False, html.Div(), html.Div(), html.Div(), html.Div(), backup_name]+
             [*backup_options]+ #saved from starting to cycle
             [*backup_values] + #this too
-            disabled)
+            disabled+
+            [backup_notes]+
+            [False])
     #clear button mega callback
     @app.callback(
         Output('name-input', 'value', allow_duplicate=True),
         *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
         *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
+        Output('notes-input', 'value', allow_duplicate=True),
         [Input('clear-button', 'n_clicks')],
         [State('name-input', 'value')],
         prevent_initial_call=True
@@ -394,7 +418,7 @@ def register_callbacks(app):
         current_options=options
         new_vals = ["Select"] * len(dropdowns)
         values=new_vals
-        return [""]+ [*new_vals]+ [*options]
+        return [""]+ [*new_vals]+ [*options]+[""]
     #edit button mega callbacl
     @app.callback(
         Output('clear-button', 'disabled', allow_duplicate=True),
@@ -407,6 +431,7 @@ def register_callbacks(app):
         *[ Output(f'grid-button-{i}', "children", allow_duplicate=True) for i in range(12)],
         *[Output(dd, 'value', allow_duplicate=True) for dd in dropdowns],
         *[Output(dd, 'options', allow_duplicate=True) for dd in dropdowns],
+        Output('notes-input', 'disabled', allow_duplicate=True),
         [Input('edit-button', 'n_clicks')],
         prevent_initial_call=True
     )
@@ -433,6 +458,7 @@ def register_callbacks(app):
                 disable+
                 divs+
                 [*values]+
-                [*options]
+                [*options]+
+                [False]
                 )
 
